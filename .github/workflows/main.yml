@@ -33,11 +33,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Install ChromeDriver
-        run: |
-          curl -L -O "https://chromedriver.storage.googleapis.com/108.0.5359.71/chromedriver_linux64.zip"
-          unzip chromedriver_linux64.zip
-          sudo mv chromedriver /usr/bin/chromedriver
-          sudo chmod +x /usr/bin/chromedriver
+        uses: webdriverio/chromedriver@v1
+        with:
+          chromedriver-version: '118.0.5993.70'
           
       - name: Run script
         run: python main.py
