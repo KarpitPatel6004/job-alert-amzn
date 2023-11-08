@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 MAX_SLEEP_TIME = 3.5*60
 TOKEN = os.environ["TELE_TOKEN"]
 DB_SECRET = os.environ["DB_SECRET"]
-CHAT_IDS = os.environ("IDS").split(',')
+CHAT_IDS = os.environ["IDS"].split(',')
 
 def search(driver):
     driver.get("https://hvr-amazon.my.site.com/")
