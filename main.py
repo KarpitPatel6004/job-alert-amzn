@@ -29,6 +29,8 @@ def send_alert(loc, desc):
     url = f"https://api.telegram.org/bot{TOKEN}"
     for chat_id in CHAT_IDS:
         params = {"chat_id": chat_id, "text": f"Location: {loc}\nJob Description: {desc}"}
+        print(params)
+        print(TOKEN)
         r = requests.get(url + "/sendMessage", params=params)
 
         if r.status_code != 200:
