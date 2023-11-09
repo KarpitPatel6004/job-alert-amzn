@@ -12,6 +12,16 @@ TOKEN = os.environ["TELE_TOKEN"]
 DB_SECRET = os.environ["DB_SECRET"]
 CHAT_IDS = os.environ["IDS"].split(',')
 
+password = quote_plus(DB_SECRET)
+uri = f"mongodb+srv://karpit:{password}@cluster0.xi7lz9a.mongodb.net/?retryWrites=true&w=majority"
+client = MongoClient(uri)
+db = client["job_alert_amzn"]
+collection = db["alert"]
+
+data = list(collection.find())
+for dic in data:
+    send_alert(dic["location"], dic["job_desc"])
+
 def search(driver):
     driver.get("https://hvr-amazon.my.site.com/")
     driver.find_element(by=By.CLASS_NAME, value="accordion-toggle").click()
