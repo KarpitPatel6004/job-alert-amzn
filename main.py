@@ -27,6 +27,7 @@ def search(driver):
 
 def send_alert(loc, desc):
     url = f"https://api.telegram.org/bot{TOKEN}"
+    print(url)
     for chat_id in CHAT_IDS:
         params = {"chat_id": chat_id, "text": f"Location: {loc}\nJob Description: {desc}"}
         r = requests.get(url + "/sendMessage", params=params)
