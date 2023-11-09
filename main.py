@@ -33,20 +33,8 @@ def send_alert(loc, desc):
         r = requests.get(url + "/sendMessage", params=params)
 
         if r.status_code != 200:
-            print(r.json())
             print("Could not send an alert")
-
-password = quote_plus(DB_SECRET)
-uri = f"mongodb+srv://karpit:{password}@cluster0.xi7lz9a.mongodb.net/?retryWrites=true&w=majority"
-client = MongoClient(uri)
-db = client["job_alert_amzn"]
-collection = db["alert"]
-
-data = list(collection.find())
-for dic in data:
-    send_alert(dic["location"], dic["job_desc"])
     
-
 def check_for_job_and_send_alert(driver):
     elements = driver.find_elements(by=By.CLASS_NAME, value="listing")
     
