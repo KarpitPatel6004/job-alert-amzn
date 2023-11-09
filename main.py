@@ -87,5 +87,5 @@ def main():
         
 
 if __name__ == "__main__":
-    time.sleep(random.randint(1, MAX_SLEEP_TIME))
+    # time.sleep(random.randint(1, MAX_SLEEP_TIME))
     main()
