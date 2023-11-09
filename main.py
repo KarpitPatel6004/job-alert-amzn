@@ -12,16 +12,6 @@ TOKEN = os.environ["TELE_TOKEN"]
 DB_SECRET = os.environ["DB_SECRET"]
 CHAT_IDS = os.environ["IDS"].split(',')
 
-password = quote_plus(DB_SECRET)
-uri = f"mongodb+srv://karpit:{password}@cluster0.xi7lz9a.mongodb.net/?retryWrites=true&w=majority"
-client = MongoClient(uri)
-db = client["job_alert_amzn"]
-collection = db["alert"]
-
-data = list(collection.find())
-for dic in data:
-    send_alert(dic["location"], dic["job_desc"])
-
 def search(driver):
     driver.get("https://hvr-amazon.my.site.com/")
     driver.find_element(by=By.CLASS_NAME, value="accordion-toggle").click()
@@ -43,6 +33,17 @@ def send_alert(loc, desc):
 
         if r.status_code != 200:
             print("Could not send an alert")
+
+password = quote_plus(DB_SECRET)
+uri = f"mongodb+srv://karpit:{password}@cluster0.xi7lz9a.mongodb.net/?retryWrites=true&w=majority"
+client = MongoClient(uri)
+db = client["job_alert_amzn"]
+collection = db["alert"]
+
+data = list(collection.find())
+for dic in data:
+    send_alert(dic["location"], dic["job_desc"])
+    
 
 def check_for_job_and_send_alert(driver):
     elements = driver.find_elements(by=By.CLASS_NAME, value="listing")
