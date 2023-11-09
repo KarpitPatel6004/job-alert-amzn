@@ -36,13 +36,6 @@ def send_alert(loc, desc):
 
 def check_for_job_and_send_alert(driver):
     elements = driver.find_elements(by=By.CLASS_NAME, value="listing")
-
-    password = quote_plus(DB_SECRET)
-    uri = f"mongodb+srv://karpit:{password}@cluster0.xi7lz9a.mongodb.net/?retryWrites=true&w=majority"
-    client = MongoClient(uri)
-    db = client["job_alert_amzn"]
-    collection = db["alert"]
-    data = list(collection.find())
     
     if elements:
 
