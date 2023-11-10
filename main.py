@@ -25,11 +25,11 @@ def search(driver):
     time.sleep(random.randint(1,3) + random.random())
     element.click()
 
-def send_alert(loc, desc):
+def send_alert(loc, desc, link):
     url = f"https://api.telegram.org/bot{TOKEN}"
     print(url)
     for chat_id in CHAT_IDS:
-        params = {"chat_id": chat_id, "text": f"Location: {loc}\nJob Description: {desc}"}
+        params = {"chat_id": chat_id, "text": f"Location: {loc}\nJob Description: {desc}\nLink:{link}"}
         r = requests.get(url + "/sendMessage", params=params)
 
         if r.status_code != 200:
@@ -62,13 +62,15 @@ def check_for_job_and_send_alert(driver):
             job_desc = element.text.split("\n")[0]
             job_location = element.text.split("\n")[1]
             job_id = element.text.split("\n")[2].split(":")[-1].strip()
+            job_link = element.find_element(by=By.TAG_NAME, value="a").get_attribute("href")
     
             if not any(dic["job_id"] == job_id for dic in data):
                 collection.insert_one({"job_id": job_id,
                                        "job_desc": job_desc,
-                                       "location": job_location
+                                       "location": job_location,
+                                       "link": job_link
                                        })                
-                send_alert(job_location, job_desc)
+                send_alert(job_location, job_desc, job_link)
 
         client.close()
 
