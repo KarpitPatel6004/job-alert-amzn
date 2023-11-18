@@ -1,33 +1,19 @@
 import os
-import time
-import random
 import requests
-from selenium import webdriver
+from bs4 import BeautifulSoup
 from urllib.parse import quote_plus
 from pymongo.mongo_client import MongoClient
-from selenium.webdriver.common.by import By
 
-MAX_SLEEP_TIME = 3.5*60
+# Put this in config file ??
 TOKEN = os.environ["TELE_TOKEN"]
 DB_SECRET = os.environ["DB_SECRET"]
 CHAT_IDS = os.environ["IDS"].split(',')
-
-def search(driver):
-    driver.get("https://hvr-amazon.my.site.com/")
-    driver.find_element(by=By.CLASS_NAME, value="accordion-toggle").click()
-    time.sleep(random.randint(1,3) + random.random())
-    driver.find_element(by=By.XPATH, value="//option[@value='CA' and contains(.,'Canada')]").click()
-    time.sleep(random.randint(1,3) + random.random())
-    driver.find_element(by=By.XPATH, value="//option[@value='ON' and contains(.,'Ontario')]").click()
-    time.sleep(random.randint(1,3) + random.random())
-    element = driver.find_element(by=By.XPATH, value="//input[@type='submit' and @value='Filter Jobs']")
-    driver.execute_script("arguments[0].scrollIntoView();", element)
-    time.sleep(random.randint(1,3) + random.random())
-    element.click()
+BASE_URL = "https://hvr-amazon.my.site.com/BBIndex"
+COUNTRY_CODE = "CA"
+STATE_CODE = "ON"
 
 def send_alert(loc, desc, link):
     url = f"https://api.telegram.org/bot{TOKEN}"
-    print(url)
     for chat_id in CHAT_IDS:
         params = {"chat_id": chat_id, "text": f"Location: {loc}\nJob Description: {desc}\nLink:{link}"}
         r = requests.get(url + "/sendMessage", params=params)
@@ -35,10 +21,29 @@ def send_alert(loc, desc, link):
         if r.status_code != 200:
             print("Could not send an alert")
     
-def check_for_job_and_send_alert(driver):
-    elements = driver.find_elements(by=By.CLASS_NAME, value="listing")
-    
-    if elements:
+def get_payload_for_post_req():
+    response = requests.get(BASE_URL)
+    soup = BeautifulSoup(response.content, "html.parser")
+    hidden_attrs = soup.find_all("input", attrs={"type": "hidden"})
+
+    payload = {
+        "j_id0:portId:j_id67:Country": COUNTRY_CODE,
+        "j_id0:portId:j_id67:State": STATE_CODE,
+        "j_id0:portId:j_id67:City": "",
+        "j_id0:portId:j_id67:j_id78": "j_id0:portId:j_id67:j_id78" # filter job button
+    }
+    for attr in hidden_attrs:
+        payload[attr["name"]] = attr["value"]
+
+    return payload
+
+def check_for_job_and_send_alert():
+    payload = get_payload_for_post_req()
+    response = requests.post(BASE_URL, data=payload)
+    soup = BeautifulSoup(response.content, "html.parser")
+    listings = soup.find_all("div", attrs={"class": "listing row"})
+
+    if listings:
 
         password = quote_plus(DB_SECRET)
         uri = f"mongodb+srv://karpit:{password}@cluster0.xi7lz9a.mongodb.net/?retryWrites=true&w=majority"
@@ -47,8 +52,8 @@ def check_for_job_and_send_alert(driver):
         collection = db["alert"]
 
         current_job_ids = []
-        for element in elements:
-            current_job_ids.append(element.text.split("\n")[2].split(":")[-1].strip())
+        for listing in listings:
+            current_job_ids.append(listing.find("strong").text)
         
         data = list(collection.find())
 
@@ -57,38 +62,25 @@ def check_for_job_and_send_alert(driver):
                 collection.delete_one({"job_id": dic["job_id"]})
                 data.remove(dic)      
         
-        for element in elements:
+        for listing in listings:
 
-            job_desc = element.text.split("\n")[0]
-            job_location = element.text.split("\n")[1]
-            job_id = element.text.split("\n")[2].split(":")[-1].strip()
-            job_link = element.find_element(by=By.TAG_NAME, value="a").get_attribute("href")
-    
+            job_desc = listing.find("a").text
+            job_location = listing.find("span").text
+            job_id = listing.find("strong").text
+            job_link = BASE_URL.replace("/BBIndex", "") + listing.find("a")["href"]
+
             if not any(dic["job_id"] == job_id for dic in data):
                 collection.insert_one({"job_id": job_id,
-                                       "job_desc": job_desc,
-                                       "location": job_location,
-                                       "link": job_link
-                                       })                
+                                    "job_desc": job_desc,
+                                    "location": job_location,
+                                    "link": job_link
+                                    })                
                 send_alert(job_location, job_desc, job_link)
 
         client.close()
 
-
 def main():
-
-    options = webdriver.ChromeOptions()
-    options.add_argument('--headless')
-    options.add_argument('--disable-gpu')
-
-    driver = webdriver.Chrome(options=options)
-    
-    search(driver)
-    time.sleep(random.randint(1,3) + random.random())
-    check_for_job_and_send_alert(driver)
-    driver.quit()
+    check_for_job_and_send_alert()
         
-
 if __name__ == "__main__":
-    # time.sleep(random.randint(1, MAX_SLEEP_TIME))
     main()
