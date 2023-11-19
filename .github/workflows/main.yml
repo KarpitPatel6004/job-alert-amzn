@@ -23,19 +23,26 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Set up Python
+        id: setup_python
         uses: actions/setup-python@v3
         with:
           python-version: '3.9'
-
-      - name: Install dependencies
+      
+      - id: python_cache
+        uses: actions/cache@v3
+        with:
+          path: venv
+          key: pip-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}
+        
+      - if: steps.python_cache.outputs.cache-hit != 'true'
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          if [ -d "venv" ]; then rm -rf venv; fi
+          python3 -m venv venv
+          venv/bin/python3 -m pip install -r requirements.txt
           
       - name: Run script
-        run: python main.py
+        run: venv/bin/python3 main.py
         env:
-          SELENIUM_HEADLESS: true
           TELE_TOKEN: ${{ secrets.TELE_TOKEN }}
           DB_SECRET: ${{ secrets.DB_SECRET }}
           IDS: ${{ secrets.IDS }}
