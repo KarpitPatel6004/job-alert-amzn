@@ -43,13 +43,13 @@ def check_for_job_and_send_alert():
     soup = BeautifulSoup(response.content, "html.parser")
     listings = soup.find_all("div", attrs={"class": "listing row"})
 
-    if listings:
+    password = quote_plus(DB_SECRET)
+    uri = f"mongodb+srv://karpit:{password}@cluster0.xi7lz9a.mongodb.net/?retryWrites=true&w=majority"
+    client = MongoClient(uri)
+    db = client["job_alert_amzn"]
+    collection = db["alert"]
 
-        password = quote_plus(DB_SECRET)
-        uri = f"mongodb+srv://karpit:{password}@cluster0.xi7lz9a.mongodb.net/?retryWrites=true&w=majority"
-        client = MongoClient(uri)
-        db = client["job_alert_amzn"]
-        collection = db["alert"]
+    if listings:
 
         current_job_ids = []
         for listing in listings:
@@ -78,6 +78,8 @@ def check_for_job_and_send_alert():
                 send_alert(job_location, job_desc, job_link)
 
         client.close()
+    else:
+        collection.delete_many({})
 
 def main():
     check_for_job_and_send_alert()
