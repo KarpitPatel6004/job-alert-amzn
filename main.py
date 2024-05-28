@@ -52,48 +52,49 @@ def check_for_job_and_send_alert(use_db, local_job_array):
 
     if listings:
 
-        current_job_ids = []
-        for listing in listings:
-            current_job_ids.append(listing.find("strong").text)
-        
-        if use_db:
-            data = list(collection.find())
-
-            for dic in list(data):
-                if dic["job_id"] not in current_job_ids:
-                    collection.delete_one({"job_id": dic["job_id"]})
-                    data.remove(dic)
-        else:
-            for dic in list(local_job_array):
-                if dic["job_id"] not in current_job_ids:
-                    local_job_array.remove(dic)
-
-        for listing in listings:
-
-            job_desc = listing.find("a").text
-            job_location = listing.find("span").text
-            job_id = listing.find("strong").text
-            job_link = BASE_URL.replace("/BBIndex", "") + listing.find("a")["href"]
+        if len(listings) < 10: 
+            current_job_ids = []
+            for listing in listings:
+                current_job_ids.append(listing.find("strong").text)
             
             if use_db:
-                if not any(dic["job_id"] == job_id for dic in data):
-                    collection.insert_one({"job_id": job_id,
-                                        "job_desc": job_desc,
-                                        "location": job_location,
-                                        "link": job_link
-                                        })                
-                    send_alert(job_location, job_desc, job_link)
-            else:
-                if not any(dic["job_id"] == job_id for dic in local_job_array):
-                    local_job_array.append({"job_id": job_id,
-                                        "job_desc": job_desc,
-                                        "location": job_location,
-                                        "link": job_link
-                                        })                
-                    send_alert(job_location, job_desc, job_link)
+                data = list(collection.find())
 
-        if use_db:
-            client.close()
+                for dic in list(data):
+                    if dic["job_id"] not in current_job_ids:
+                        collection.delete_one({"job_id": dic["job_id"]})
+                        data.remove(dic)
+            else:
+                for dic in list(local_job_array):
+                    if dic["job_id"] not in current_job_ids:
+                        local_job_array.remove(dic)
+
+            for listing in listings:
+
+                job_desc = listing.find("a").text
+                job_location = listing.find("span").text
+                job_id = listing.find("strong").text
+                job_link = BASE_URL.replace("/BBIndex", "") + listing.find("a")["href"]
+                
+                if use_db:
+                    if not any(dic["job_id"] == job_id for dic in data):
+                        collection.insert_one({"job_id": job_id,
+                                            "job_desc": job_desc,
+                                            "location": job_location,
+                                            "link": job_link
+                                            })                
+                        send_alert(job_location, job_desc, job_link)
+                else:
+                    if not any(dic["job_id"] == job_id for dic in local_job_array):
+                        local_job_array.append({"job_id": job_id,
+                                            "job_desc": job_desc,
+                                            "location": job_location,
+                                            "link": job_link
+                                            })                
+                        send_alert(job_location, job_desc, job_link)
+
+            if use_db:
+                client.close()
     else:
         if use_db:
             collection.delete_many({})
